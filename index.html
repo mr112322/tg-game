@@ -22,16 +22,17 @@
     <div id="board" class="board"></div>
     <div id="gameOver" class="over">Game Over</div>
     <button class="btn" onclick="restart()">Restart</button>
-    <button class="btn ad-btn" onclick="showAd()">Watch Ad +30</button>
+    <button class="btn ad-btn" onclick="showRewardedAd()">Watch Ad +30</button>
+    <button class="btn" onclick="showInterstitialAd()">Show Interstitial Ad</button>
 
     <script>
-        // TG 初始化
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
 
-        // 填入你的 AdsGram Block ID（数字）
-        const ADS_BLOCK_ID = "你的BlockID";
+        // 已填入你的广告ID
+        const REWARD_BLOCK_ID = "31834";
+        const INTERSTITIAL_BLOCK_ID = "31835";
 
         let score = 0;
         let board = [];
@@ -102,36 +103,36 @@
             initBoard();
         }
 
-        // 广告逻辑
-        function showAd() {
+        // 激励广告
+        function showRewardedAd() {
             if (!window.AdsGram) {
-                score += 30;
-                updateScore();
-                alert("+30 score!");
+                score += 30; updateScore(); alert("+30 score!");
                 return;
             }
             AdsGram.showRewardedVideo({
-                onSuccess: () => {
-                    score += 30;
-                    updateScore();
-                    alert("Success! +30 score!");
-                },
-                onError: () => {
-                    score += 30;
-                    updateScore();
-                    alert("Ad unavailable, +30 score!");
-                },
-                onClose: () => {}
+                blockId: REWARD_BLOCK_ID,
+                onSuccess: () => { score +=30; updateScore(); alert("Success! +30 score!"); },
+                onError: () => { score +=30; updateScore(); alert("Ad unavailable"); }
             });
         }
 
-        // 初始化广告
-        window.onload = function() {
-            if (ADS_BLOCK_ID && ADS_BLOCK_ID !== "你的BlockID") {
-                try {
-                    AdsGram.init({ blockId: ADS_BLOCK_ID });
-                } catch(e) {}
+        // 插屏广告
+        function showInterstitialAd() {
+            if (!window.AdsGram) {
+                alert("Interstitial ad not available");
+                return;
             }
+            AdsGram.showInterstitial({
+                blockId: INTERSTITIAL_BLOCK_ID,
+                onClose: () => {},
+                onError: () => { alert("Interstitial ad error"); }
+            });
+        }
+
+        window.onload = function() {
+            try {
+                AdsGram.init({ blockId: REWARD_BLOCK_ID });
+            } catch(e){}
             initBoard();
             updateScore();
         };
