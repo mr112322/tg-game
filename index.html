@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Number Pop</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://adsgram.ai/js/sdk.js"></script>
+    <!-- 已修正为 AdsGram 官方正确SDK地址 -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
         body{background:#121212;color:#fff;text-align:center;padding:20px}
@@ -30,7 +31,7 @@
         tg.ready();
         tg.expand();
 
-        // 已填入你的广告ID
+        // 你的广告ID不变
         const REWARD_BLOCK_ID = "31834";
         const INTERSTITIAL_BLOCK_ID = "31835";
 
@@ -39,22 +40,32 @@
         let gameOver = false;
         const size = 4;
 
+        // 广告控制器全局初始化
+        let rewardAd, interstitialAd;
+
+        window.onload = function() {
+            // 正确分别初始化激励、插屏广告
+            if(window.AdsGram){
+                rewardAd = AdsGram.init({ blockId: REWARD_BLOCK_ID });
+                interstitialAd = AdsGram.init({ blockId: INTERSTITIAL_BLOCK_ID });
+            }
+            initBoard();
+            updateScore();
+        };
+
         function updateScore() {
             document.getElementById("score").innerText = score;
         }
-
         function randomTile() {
             const r = Math.random();
             return r < 0.7 ? 2 : r < 0.95 ? 4 : 8;
         }
-
         function initBoard() {
             board = Array(size * size).fill(0);
             addRandom();
             addRandom();
             render();
         }
-
         function addRandom() {
             let zeros = [];
             board.forEach((v, i) => { if(v === 0) zeros.push(i); });
@@ -62,7 +73,6 @@
             let pos = zeros[Math.floor(Math.random() * zeros.length)];
             board[pos] = randomTile();
         }
-
         function render() {
             const el = document.getElementById("board");
             el.innerHTML = "";
@@ -78,7 +88,6 @@
                 d.onclick = () => click(i);
                 el.appendChild(d);
             });
-
             if(!board.includes(0)) {
                 gameOver = true;
                 document.getElementById("gameOver").style.display = "block";
@@ -86,7 +95,6 @@
                 document.getElementById("gameOver").style.display = "none";
             }
         }
-
         function click(i) {
             if(gameOver || board[i] === 0) return;
             score += board[i];
@@ -95,7 +103,6 @@
             addRandom();
             render();
         }
-
         function restart() {
             score = 0;
             gameOver = false;
@@ -103,39 +110,36 @@
             initBoard();
         }
 
-        // 激励广告
+        // 修复后激励广告：只有看完广告才给+30，失败不给分
         function showRewardedAd() {
-            if (!window.AdsGram) {
-                score += 30; updateScore(); alert("+30 score!");
+            if (!window.AdsGram || !rewardAd) {
+                alert("广告暂时无法使用，请稍后再试");
                 return;
             }
-            AdsGram.showRewardedVideo({
-                blockId: REWARD_BLOCK_ID,
-                onSuccess: () => { score +=30; updateScore(); alert("Success! +30 score!"); },
-                onError: () => { score +=30; updateScore(); alert("Ad unavailable"); }
+            rewardAd.show()
+            .then(() => {
+                // 正常看完广告才加分
+                score +=30;
+                updateScore();
+                alert("观看广告成功 +30 积分！");
+            })
+            .catch(() => {
+                // 广告加载失败/无广告：只提示，不给分
+                alert("暂无可用广告，稍后再试");
             });
         }
 
-        // 插屏广告
+        // 修复后插屏广告
         function showInterstitialAd() {
-            if (!window.AdsGram) {
-                alert("Interstitial ad not available");
+            if (!window.AdsGram || !interstitialAd) {
+                alert("插屏广告暂时无法使用");
                 return;
             }
-            AdsGram.showInterstitial({
-                blockId: INTERSTITIAL_BLOCK_ID,
-                onClose: () => {},
-                onError: () => { alert("Interstitial ad error"); }
+            interstitialAd.show()
+            .catch(() => {
+                alert("插屏广告加载失败");
             });
         }
-
-        window.onload = function() {
-            try {
-                AdsGram.init({ blockId: REWARD_BLOCK_ID });
-            } catch(e){}
-            initBoard();
-            updateScore();
-        };
     </script>
 </body>
 </html>
