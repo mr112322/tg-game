@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Number Game</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- ✅ AdsGram SDK（必须） -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+        body{background:#121212;color:#fff;text-align:center;padding:20px}
+        .score{font-size:26px;margin:10px 0 20px}
+        .board{display:grid;grid-template-columns:repeat(4,70px);gap:8px;justify-content:center;margin:0 auto}
+        .tile{width:70px;height:70px;background:#333;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:bold;color:#fff;cursor:pointer}
+        .btn{margin-top:20px;padding:12px 24px;background:#4d4bc4;color:#fff;border:none;border-radius:10px;font-size:16px}
+        .ad-btn{background:#ffc800;color:#000}
+        .over{color:red;font-size:20px;margin:15px 0;display:none}
+    </style>
+</head>
+<body>
+    <div class="score">Score: <span id="score">0</span></div>
+    <div id="board" class="board"></div>
+    <div id="gameOver" class="over">Game Over</div>
+    <button class="btn" onclick="restart()">Restart</button>
+    <button class="btn ad-btn" onclick="showRewardedAd()">Watch Ad +30</button>
+    <button class="btn" onclick="showInterstitialAd()">Interstitial</button>
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        // ✅ 你的广告ID（变量不变）
+        const REWARD_BLOCK_ID = "31834";
+        const INTERSTITIAL_BLOCK_ID = "int-31835";
+        let rewardAd;
+        let score = 0;
+        let board = [];
+        let gameOver = false;
+        const size = 4;
+        window.onload = function() {
+            // 激励保持你原来写法不变
+            rewardAd = window.Adsgram.init({ blockId: "31834" });
+            initBoard();
+            updateScore();
+        };
+        function updateScore() {
+            document.getElementById("score").innerText = score;
+        }
+        function randomTile() {
+            const r = Math.random();
+            return r < 0.7 ? 2 : r < 0.95 ? 4 : 8;
+        }
+        function initBoard() {
+            board = Array(size * size).fill(0);
+            addRandom();
+            addRandom();
+            render();
+        }
+        function addRandom() {
+            let zeros = [];
+            board.forEach((v, i) => { if(v === 0) zeros.push(i); });
+            if(zeros.length === 0) return;
+            let pos = zeros[Math.floor(Math.random() * zeros.length)];
+            board[pos] = randomTile();
+        }
+        function render() {
+            const el = document.getElementById("board");
+            el.innerHTML = "";
+            board.forEach((v, i) => {
+                let d = document.createElement("div");
+                d.className = "tile";
+                d.innerText = v || "";
+                d.style.background = v === 2 ? "#3b82f6" :
+                                  v === 4 ? "#10b981" :
+                                  v === 8 ? "#f97316" :
+                                  v === 16 ? "#8b5cf6" :
+                                  v >= 32 ? "#ef4444" : "#333";
+                d.onclick = () => click(i);
+                el.appendChild(d);
+            });
+            if(!board.includes(0)) {
+                gameOver = true;
+                document.getElementById("gameOver").style.display = "block";
+            } else {
+                document.getElementById("gameOver").style.display = "none";
+            }
+        }
+        function click(i) {
+            if(gameOver || board[i] === 0) return;
+            score += board[i];
+            board[i] = 0;
+            updateScore();
+            addRandom();
+            render();
+        }
+        function restart() {
+            score = 0;
+            gameOver = false;
+            updateScore();
+            initBoard();
+        }
+        // ✅ 激励保持你原来官方写法 完全不动
+        function showRewardedAd() {
+            rewardAd.show()
+            .then((res) => {
+                if (res.done) {
+                    score += 30;
+                    updateScore();
+                    alert("Reward +30");
+                }
+            })
+            .catch(() => {
+                alert("Ad unavailable");
+            });
+        }
+
+        // ✅ 插屏改成官方一模一样写法
+        async function showInterstitialAd() {
+            try {
+                await window.Adsgram.init({ blockId: "int-31835" }).show();
+            } catch (error) {
+                alert("Interstitial unavailable");
+            }
+        }
+    </script>
+</body>
+</html>
