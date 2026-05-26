@@ -21,6 +21,7 @@
     <div class="score">Score: <span id="score">0</span></div>
     <div id="board" class="board"></div>
     <div id="gameOver" class="over">Game Over</div>
+
     <button class="btn" onclick="restart()">Restart</button>
     <button class="btn ad-btn" id="watchAdBtn">Watch Ad +30</button>
     <button class="btn" id="interstitialBtn">Interstitial Ad</button>
@@ -35,12 +36,10 @@
         let gameOver = false;
         const size = 4;
 
-        // ============================
-        // 官方官方官方！初始化广告
-        // 无变量！直接写ID！
-        // ============================
-        const rewardAd = window.Adsgram.init({ blockId: "31834" });
-        const interstitialAd = window.Adsgram.init({ blockId: "31835" });
+        // 冷却时间（防刷，更稳定）
+        let lastRewardTime = 0;
+        let lastInterTime = 0;
+        const COOLDOWN = 20000;
 
         window.onload = function() {
             initBoard();
@@ -111,29 +110,49 @@
         }
 
         // ============================
-        // 官方官方官方！激励广告
-        // 完全按你给的文档写
+        // 激励广告（可重复稳定播放）
         // ============================
-        document.getElementById("watchAdBtn").addEventListener("click", () => {
-            rewardAd.show().then((result) => {
-                score += 30;
-                updateScore();
-                alert("Reward +30");
-            }).catch((result) => {
-                alert("Ad unavailable");
-            });
+        document.getElementById("watchAdBtn").addEventListener("click", async () => {
+            const now = Date.now();
+            if (now - lastRewardTime < COOLDOWN) {
+                alert("Please wait before watching again!");
+                return;
+            }
+            lastRewardTime = now;
+
+            try {
+                // 每次点击重新初始化（官方标准）
+                const rewardAd = window.Adsgram.init({ blockId: "31834" });
+                const result = await rewardAd.show();
+
+                if (result.done) {
+                    score += 30;
+                    updateScore();
+                    alert("Reward +30!");
+                }
+            } catch (e) {
+                alert("AD unavailable, try later");
+            }
         });
 
         // ============================
-        // 官方官方官方！插屏广告
-        // 完全按你给的文档写
+        // 插屏广告（可重复稳定播放）
         // ============================
-        document.getElementById("interstitialBtn").addEventListener("click", () => {
-            interstitialAd.show().then((result) => {
-                console.log("Interstitial closed");
-            }).catch((result) => {
+        document.getElementById("interstitialBtn").addEventListener("click", async () => {
+            const now = Date.now();
+            if (now - lastInterTime < COOLDOWN) {
+                alert("Please wait!");
+                return;
+            }
+            lastInterTime = now;
+
+            try {
+                // 每次点击重新初始化
+                const interstitialAd = window.Adsgram.init({ blockId: "int-31835" });
+                await interstitialAd.show();
+            } catch (e) {
                 alert("Interstitial unavailable");
-            });
+            }
         });
     </script>
 </body>
